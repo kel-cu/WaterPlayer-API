@@ -35,11 +35,9 @@ public class WaterPlayerAPI {
         User.loadModerators();
         server = new Express();
         server.use((req, res) -> log(String.format("%s сделал запрос на %s", req.getIp(), req.getPath())));
-        server.all("/", (req, res) -> {
-            JsonObject object = Objects.INDEX;
-            object.addProperty("version", release.getString("version", "=-="));
-            res.send(object.toString());
-        });
+        server.all("/", (req, res) -> res.send(Objects.INDEX.toString()));
+        server.all("/release", (req, res) -> res.send(release.toString()));
+        server.all("/favicon.ico", (req, res) -> res.redirect("https://waterplayer.ru/favicon.ico"));
         server.all("/public_config", (req, res) -> res.send(publicConfig.toString()));
         server.all("/ping", (req, res) -> {
             JsonObject jsonObject = new JsonObject();
