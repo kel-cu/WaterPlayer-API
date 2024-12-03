@@ -6,27 +6,16 @@ import com.google.gson.JsonObject;
 import express.http.request.Request;
 import express.http.response.Response;
 import express.utils.Status;
-import org.slf4j.event.Level;
 import ru.kelcuprum.waterplayer.api.WaterPlayerAPI;
 import ru.kelcuprum.waterplayer.api.Web;
-import ru.kelcuprum.waterplayer.api.objects.Errors;
+import ru.kelcuprum.waterplayer.api.objects.Objects;
 
-import java.io.File;
 import java.net.URI;
 import java.net.http.HttpRequest;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.HashMap;
 
 public class User {
     protected static HashMap<String, JsonObject> users = new HashMap<>();
-    public static String Unauthorized = "{\n" +
-            "                            \"error\": {\n" +
-            "                                \"code\": 401,\n" +
-            "                                \"codename\": \"Unauthorized\",\n" +
-            "                                \"message\": \"You not authorized\"\n" +
-            "                            }\n" +
-            "                        }";
     public static HashMap<String, Boolean> moderators = new HashMap<>();
     public static String MOJANG_API = "https://api.minecraftservices.com/minecraft/profile";
     public static void loadModerators(){
@@ -37,29 +26,26 @@ public class User {
     public static void getUser(Request req, Response res){
         if(req.getHeader("Authorization").isEmpty()){
             res.setStatus(Status._401);
-            res.send(Unauthorized);
+            res.send(Objects.UNAUTHORIZED.toString());
             return;
         }
         JsonObject user = User.getUser(req.getHeader("Authorization").get(0));
         if(user == null){
             res.setStatus(Status._401);
-            res.send(Unauthorized);
+            res.send(Objects.UNAUTHORIZED.toString());
         } else res.send(user.toString());
     }
     public static void verify(Request req, Response res){
         if(req.getHeader("Authorization").isEmpty() && WaterPlayerAPI.config.getBoolean("VERIFY", true)){
             res.setStatus(Status._401);
-            res.send(Unauthorized);
+            res.send(Objects.UNAUTHORIZED.toString());
             return;
         }
         JsonObject user = User.getUser(req.getHeader("Authorization").get(0));
-        if(user == null){
+        if(user == null && WaterPlayerAPI.config.getBoolean("VERIFY", true)){
             res.setStatus(Status._401);
-            res.send(Unauthorized);
-        } else res.send("{\n" +
-                "                            \"message\": \"ok\",\n" +
-                "                            \"ok\": true\n" +
-                "                        }");
+            res.send(Objects.UNAUTHORIZED.toString());
+        } else res.send("{\"message\": \"ok\", \"ok\": true}");
     }
     public static JsonObject getUser(String token){
         if(users.containsKey(token)) return users.get(token);

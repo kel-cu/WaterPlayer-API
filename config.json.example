@@ -1,0 +1,15 @@
+{
+    "port": 4500,
+    "spotify": {
+        "apiEndpoint": "https://api.spotify.com/v1",
+		"authEndpoint": "https://accounts.spotify.com/api/token",
+		"clientId": "YOUR_CLIENT_ID",
+        "clientSecret": "YOUR_CLIENT_SECRET"
+    },
+    "yandex":{
+        "apiEndpoint": "https://api.music.yandex.net",
+        "token": "YOUR_TOKEN"
+    },
+    "allow_publish": true,
+    "moderators": ["NICKNAME"]
+}

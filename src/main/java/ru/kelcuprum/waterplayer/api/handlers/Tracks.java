@@ -8,26 +8,24 @@ import express.utils.Status;
 import ru.kelcuprum.waterplayer.api.WaterPlayerAPI;
 import ru.kelcuprum.waterplayer.api.Web;
 import ru.kelcuprum.waterplayer.api.config.GsonHelper;
-import ru.kelcuprum.waterplayer.api.objects.Errors;
 import org.apache.commons.codec.binary.Base64;
 
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpRequest;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 
-import static ru.kelcuprum.waterplayer.api.objects.Errors.NOT_FOUND;
+import static ru.kelcuprum.waterplayer.api.objects.Objects.BAD_REQUEST;
+import static ru.kelcuprum.waterplayer.api.objects.Objects.NOT_FOUND;
 
 public class Tracks {
 
     public static void info(Request req, Response res) {
         if(req.getQuery("author") == null){
             res.setStatus(Status._400);
-            res.send("{\"error\": {\n" +
-                    "                \"code\": 400,\n" +
-                    "                \"codename\": \"Bad Request\",\n" +
-                    "                \"message\": \"Нет нужных аргументов\"\n" +
-                    "            }");
+            res.send(BAD_REQUEST.toString());
             return;
         }
         JsonObject jsonObject = getInfo(req.getQuery("album"), req.getQuery("author"));
@@ -38,26 +36,33 @@ public class Tracks {
     public static void artwork(Request req, Response res) {
         if(req.getQuery("author") == null){
             res.setStatus(Status._400);
-            res.send("{\"error\": {\n" +
-                    "                \"code\": 400,\n" +
-                    "                \"codename\": \"Bad Request\",\n" +
-                    "                \"message\": \"Нет нужных аргументов\"\n" +
-                    "            }");
+            res.send(BAD_REQUEST.toString());
             return;
         }
         JsonObject jsonObject = getInfo(req.getQuery("album"), req.getQuery("author"));
         if (jsonObject == null) res.send(NOT_FOUND.toString());
         res.redirect(jsonObject.get(req.getQuery("album") == null ? "author" : "track").getAsJsonObject().get("artwork").getAsString());
     }
+    protected static HashMap<String, JsonObject> cacheRequests = new LinkedHashMap<>();
 
     public static JsonObject getInfo(String album, String author) {
-        JsonObject finalResponse = null;
-        JsonObject spotify = getSpotifyInfo(album, author);
-        if (spotify == null) {
-            JsonObject yandex = getYandexInfo(album, author);
-            if (yandex != null) finalResponse = yandex;
-        } else finalResponse = spotify;
-        return finalResponse;
+        String cacheID = (album == null ? author : String.format("%s-%s", author, album)).toLowerCase();
+        if(cacheRequests.containsKey(cacheID)) {
+            WaterPlayerAPI.log(String.format("| Запрос %s был закэширован.", cacheID));
+            return cacheRequests.get(cacheID);
+        } else {
+            JsonObject finalResponse = null;
+            JsonObject spotify = getSpotifyInfo(album, author);
+            if (spotify == null) {
+                JsonObject yandex = getYandexInfo(album, author);
+                if (yandex != null) finalResponse = yandex;
+            } else finalResponse = spotify;
+            if(finalResponse != null) {
+                cacheRequests.put(cacheID, finalResponse);
+                WaterPlayerAPI.log(String.format("| Запрос %s был добавлен в кэш. Текущее кол-во кэша: %s", cacheID, cacheRequests.size()));
+            }
+            return finalResponse;
+        }
     }
 
     public static JsonObject getYandexInfo(String album, String author) {
@@ -96,7 +101,6 @@ public class Tracks {
             }
             return null;
         } catch (Exception ex) {
-            ex.printStackTrace();
             WaterPlayerAPI.log(ex);
             return null;
         }

@@ -7,11 +7,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 import ru.kelcuprum.waterplayer.api.config.Config;
-import ru.kelcuprum.waterplayer.api.config.GsonHelper;
 import ru.kelcuprum.waterplayer.api.handlers.Playlists;
 import ru.kelcuprum.waterplayer.api.handlers.Tracks;
 import ru.kelcuprum.waterplayer.api.handlers.User;
-import ru.kelcuprum.waterplayer.api.objects.Errors;
+import ru.kelcuprum.waterplayer.api.objects.Objects;
 
 import java.io.File;
 
@@ -25,7 +24,7 @@ public class WaterPlayerAPI {
         User.loadModerators();
         server = new Express();
         server.use((req, res) -> log(String.format("%s сделал запрос на %s", req.getIp(), req.getPath())));
-        server.all("/", (req, res) -> res.send(Errors.INDEX.toString()));
+        server.all("/", (req, res) -> res.send(Objects.INDEX.toString()));
         server.all("/public_config", (req, res) -> res.send(publicConfig.toString()));
         server.all("/ping", (req, res) -> {
             JsonObject jsonObject = new JsonObject();
@@ -44,14 +43,14 @@ public class WaterPlayerAPI {
         server.get("/:id", Playlists::getPlaylist);
         server.all((req, res) -> {
             res.setStatus(Status._404);
-            res.send(Errors.NOT_FOUND.toString());
+            res.send(Objects.NOT_FOUND.toString());
         });
         server.listen(config.getNumber("port", 4500).intValue());
     }
 
     // Упрощение работы с ответами
     public static JsonObject getErrorObject(Exception ex){
-      JsonObject object = GsonHelper.parse("{\"error\":{\"code\":500,\"codename\":\"Internal Server Error\",\"message\":\"\"}}");
+      JsonObject object = Objects.INTERNAL_SERVER_ERROR;
       object.get("error").getAsJsonObject().addProperty("message", ex.getMessage() == null ? ex.getClass().toString() : ex.getMessage());
       return object;
     }

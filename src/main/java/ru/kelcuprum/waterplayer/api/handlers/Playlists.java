@@ -8,15 +8,12 @@ import express.utils.Status;
 import org.slf4j.event.Level;
 import ru.kelcuprum.waterplayer.api.WaterPlayerAPI;
 import ru.kelcuprum.waterplayer.api.config.GsonHelper;
-import ru.kelcuprum.waterplayer.api.objects.Errors;
+import ru.kelcuprum.waterplayer.api.objects.Objects;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Objects;
-
-import static ru.kelcuprum.waterplayer.api.handlers.User.Unauthorized;
 
 public class Playlists {
     public static File file = new File("playlists");
@@ -35,7 +32,7 @@ public class Playlists {
         try {
             if (path.toFile().exists())
                 res.send(Files.readString(path));
-            else res.send(Errors.NOT_FOUND.toString());
+            else res.send(Objects.NOT_FOUND.toString());
         } catch (Exception ex) {
             WaterPlayerAPI.log(ex, Level.ERROR);
             res.setStatus(Status._500);
@@ -46,7 +43,7 @@ public class Playlists {
     public static void deletePlaylist(Request req, Response res) {
         if (req.getHeader("Authorization").isEmpty()) {
             res.setStatus(Status._401);
-            res.send(Unauthorized);
+            res.send(Objects.UNAUTHORIZED.toString());
             return;
         }
         JsonObject user = User.getUser(req.getHeader("Authorization").get(0));
@@ -56,19 +53,10 @@ public class Playlists {
                 JsonObject playlist = GsonHelper.parse(Files.readString(path));
                 if (playlist.get("data").getAsJsonObject().get("author") == user.get("name") || user.get("moderator").getAsBoolean()) {
                     boolean state = path.toFile().delete();
-                    res.send("{ \"id\": \"" + req.getParam("id") + "\",\n" +
-                            "                        \"status\": " + state + "\n" +
-                            "                    }");
+                    res.send("{ \"id\": \"" + req.getParam("id") + "\",\"status\": " + state + "}");
                 } else {
                     res.setStatus(Status._403);
-                    res.send("{" +
-                            "                        \"error\": {\n" +
-                            "                            \"code\": 403,\n" +
-                            "                            \"codename\": \"Forbidden\",\n" +
-                            "                            \"message\": \"You not moderator or author\"\n" +
-                            "                        },\n" +
-                            "                        \"status\": false\n" +
-                            "                    }");
+                    res.send("{\"error\": {\"code\": 403,\"codename\": \"Forbidden\",\"message\": \"You not moderator or author\"},\"status\": false}");
                 }
             } else throw new RuntimeException("File not exists");
         } catch (Exception ex) {
@@ -86,7 +74,7 @@ public class Playlists {
         }
         if (req.getHeader("Authorization").isEmpty() && WaterPlayerAPI.config.getBoolean("VERIFY", true)) {
             res.setStatus(Status._401);
-            res.send(Unauthorized);
+            res.send(Objects.UNAUTHORIZED.toString());
             return;
         }
         try {
@@ -94,11 +82,7 @@ public class Playlists {
             String isString = IS == null ? "{}" : isToString(IS);
             if (IS == null || !GsonHelper.parse(isString).has("id")) {
                 res.setStatus(Status._400);
-                res.send("{\"error\": {\n" +
-                        "                \"code\": 400,\n" +
-                        "                \"codename\": \"Bad Request\",\n" +
-                        "                \"message\": \"Нет нужных аргументов\"\n" +
-                        "            }");
+                res.send(Objects.BAD_REQUEST.toString());
                 return;
             }
             boolean allowPublish = !WaterPlayerAPI.config.getBoolean("VERIFY", true);
@@ -106,7 +90,7 @@ public class Playlists {
                 JsonObject user = User.getUser(req.getHeader("Authorization").get(0));
                 if (user == null) {
                     res.setStatus(Status._401);
-                    res.send(Unauthorized);
+                    res.send(Objects.UNAUTHORIZED.toString());
                     return;
                 }
             }
@@ -115,31 +99,13 @@ public class Playlists {
 
             if (playlist.get("title").getAsString().equalsIgnoreCase("example title")) {
                 res.setStatus(Status._400);
-                res.send("{\n" +
-                        "            \"error\": {\n" +
-                        "                \"code\": 400,\n" +
-                        "                \"codename\": \"Bad Request\",\n" +
-                        "                \"message\": \"Invalid playlist title\"\n" +
-                        "            }\n" +
-                        "        }");
-            } else if (Objects.equals(playlist.getAsJsonArray("urls").get(0).getAsString(), "https://www.youtube.com/watch?v=2bjBl-nX1oc") || (!playlist.get("public").getAsBoolean() && playlist.getAsJsonArray("urls").isEmpty()) || (playlist.get("public").getAsBoolean() && playlist.getAsJsonArray("urls").size() < 3)) {
+                res.send("{\"error\": {\"code\": 400,\"codename\": \"Bad Request\",\"message\": \"Invalid playlist title\"}}");
+            } else if (java.util.Objects.equals(playlist.getAsJsonArray("urls").get(0).getAsString(), "https://www.youtube.com/watch?v=2bjBl-nX1oc") || (!playlist.get("public").getAsBoolean() && playlist.getAsJsonArray("urls").isEmpty()) || (playlist.get("public").getAsBoolean() && playlist.getAsJsonArray("urls").size() < 3)) {
                 res.setStatus(Status._400);
-                res.send("{\n" +
-                        "            \"error\": {\n" +
-                        "                \"code\": 400,\n" +
-                        "                \"codename\": \"Bad Request\",\n" +
-                        "                \"message\": \"Invalid playlist urls\"\n" +
-                        "            }\n" +
-                        "        }");
+                res.send("{\"error\": {\"code\": 400,\"codename\": \"Bad Request\",\"message\": \"Invalid playlist urls\"}}");
             } else if (playlist.get("public").getAsBoolean() && !playlist.has("icon")) {
                 res.setStatus(Status._400);
-                res.send("{\n" +
-                        "            \"error\": {\n" +
-                        "                \"code\": 400,\n" +
-                        "                \"codename\": \"Bad Request\",\n" +
-                        "                \"message\": \"Invalid playlist icon\"\n" +
-                        "            }\n" +
-                        "        }");
+                res.send("{\"error\": {\"code\": 400,\"codename\": \"Bad Request\",\"message\": \"Invalid playlist icon\"}}");
             }
 
             String id = WaterPlayerAPI.makeIDPlaylist(7);
@@ -180,7 +146,7 @@ public class Playlists {
         }
         int total = 0;
         JsonArray results = new JsonArray();
-        for (File file : file.getAbsoluteFile().listFiles()) {
+        for (File file : file.listFiles()) {
             try {
                 JsonObject playlist = GsonHelper.parse(Files.readString(file.toPath()));
                 if ((playlist.get("id").getAsString().toLowerCase().contains(query) || playlist.get("url").getAsString().toLowerCase().contains(query)
