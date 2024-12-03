@@ -55,7 +55,10 @@ public class Tracks {
             JsonObject spotify = getSpotifyInfo(album, author);
             if (spotify == null) {
                 JsonObject yandex = getYandexInfo(album, author);
-                if (yandex != null) finalResponse = yandex;
+                if (yandex == null) {
+                    JsonObject youtube = getYouTubeInfo(album, author);
+                    if(youtube != null) finalResponse = youtube;
+                } else finalResponse = yandex;
             } else finalResponse = spotify;
             if(finalResponse != null) {
                 cacheRequests.put(cacheID, finalResponse);
@@ -150,6 +153,52 @@ public class Tracks {
             return null;
         } catch (Exception ex) {
             ex.printStackTrace();
+            WaterPlayerAPI.log(ex);
+            return null;
+        }
+    }
+
+    public static JsonObject getYouTubeInfo(String album, String author) {
+        try {
+            String queryForApi = album == null ? author : String.format("%s %s", author, album);
+            String searchUrl = String.format("%s/youtube/v3/search?part=snippet&q=%s&regionCode=US&type=%s&key=%s", WaterPlayerAPI.config.getJsonObject("youtube", new JsonObject()).get("apiEndpoint").getAsString(), uriEncode(queryForApi), album == null ? "channel" : "video", WaterPlayerAPI.config.getJsonObject("youtube", new JsonObject()).get("apiKey").getAsString());
+            JsonObject jsonObject = Web.getJsonObject(HttpRequest.newBuilder(URI.create(searchUrl))
+                    .header("Accept", "application/json"));
+            for (JsonElement element : jsonObject.getAsJsonArray("items")) {
+                JsonObject resp = new JsonObject();
+                JsonObject json = element.getAsJsonObject().getAsJsonObject("snippet");
+                JsonObject meta = element.getAsJsonObject().getAsJsonObject("id");
+                if (meta.get("kind").getAsString().equalsIgnoreCase("youtube#video")) {
+                    if (json.get("channelTitle").getAsString().equalsIgnoreCase(author)) {
+                        if (json.get("title").getAsString().equalsIgnoreCase(album)) {
+                            JsonObject track = new JsonObject();
+                            track.addProperty("title", json.get("title").getAsString());
+                            if (json.has("thumbnails")) {
+                                if(json.getAsJsonObject("thumbnails").has("high")) track.addProperty("artwork", json.getAsJsonObject("thumbnails").getAsJsonObject("high").get("url").getAsString());
+                                else if(json.getAsJsonObject("thumbnails").has("medium")) track.addProperty("artwork", json.getAsJsonObject("thumbnails").getAsJsonObject("medium").get("url").getAsString());
+                                else if(json.getAsJsonObject("thumbnails").has("default")) track.addProperty("artwork", json.getAsJsonObject("thumbnails").getAsJsonObject("default").get("url").getAsString());
+
+                            }
+                            resp.add("track", track);
+                            JsonObject artist = getInfo(null, author);
+                            resp.add("author", artist.has("author") ? artist.get("author").getAsJsonObject() : null);
+                            return resp;
+                        }
+                    }
+                } else if (json.get("channelTitle").getAsString().equalsIgnoreCase(author)) {
+                    JsonObject artist = new JsonObject();
+                    artist.addProperty("name", json.get("channelTitle").getAsString());
+                    if (json.has("thumbnails")) {
+                        if(json.getAsJsonObject("thumbnails").has("high")) artist.addProperty("artwork", json.getAsJsonObject("thumbnails").getAsJsonObject("high").get("url").getAsString());
+                        else if(json.getAsJsonObject("thumbnails").has("medium")) artist.addProperty("artwork", json.getAsJsonObject("thumbnails").getAsJsonObject("medium").get("url").getAsString());
+                        else if(json.getAsJsonObject("thumbnails").has("default")) artist.addProperty("artwork", json.getAsJsonObject("thumbnails").getAsJsonObject("default").get("url").getAsString());
+                    }
+                    resp.add("author", artist);
+                    return resp;
+                }
+            }
+            return null;
+        } catch (Exception ex) {
             WaterPlayerAPI.log(ex);
             return null;
         }

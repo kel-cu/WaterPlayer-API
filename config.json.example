@@ -10,6 +10,10 @@
         "apiEndpoint": "https://api.music.yandex.net",
         "token": "YOUR_TOKEN"
     },
+    "youtube": {
+        "apiEndpoint": "https://youtube.googleapis.com",
+        "apiKey": "YOUR_API_KEY"
+    },
     "allow_publish": true,
     "moderators": ["NICKNAME"]
 }
