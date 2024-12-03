@@ -7,24 +7,39 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 import ru.kelcuprum.waterplayer.api.config.Config;
+import ru.kelcuprum.waterplayer.api.config.GsonHelper;
 import ru.kelcuprum.waterplayer.api.handlers.Playlists;
 import ru.kelcuprum.waterplayer.api.handlers.Tracks;
 import ru.kelcuprum.waterplayer.api.handlers.User;
 import ru.kelcuprum.waterplayer.api.objects.Objects;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 public class WaterPlayerAPI {
     public static Express server;
     public static Config config = new Config("config.json");
     public static Config publicConfig = new Config("public_config.json");
+    public static Config release = new Config(new JsonObject());
 
     public static void main(String[] args) {
         log("Hello, world!");
+        try {
+            InputStream releaseFile = WaterPlayerAPI.class.getResourceAsStream("/release.json");
+            release = new Config(GsonHelper.parse(new String(releaseFile.readAllBytes(), StandardCharsets.UTF_8)));
+        } catch (IOException e) {
+            log(e, Level.DEBUG);
+        }
         User.loadModerators();
         server = new Express();
         server.use((req, res) -> log(String.format("%s сделал запрос на %s", req.getIp(), req.getPath())));
-        server.all("/", (req, res) -> res.send(Objects.INDEX.toString()));
+        server.all("/", (req, res) -> {
+            JsonObject object = Objects.INDEX;
+            object.addProperty("version", release.getString("version", "=-="));
+            res.send(object.toString());
+        });
         server.all("/public_config", (req, res) -> res.send(publicConfig.toString()));
         server.all("/ping", (req, res) -> {
             JsonObject jsonObject = new JsonObject();
