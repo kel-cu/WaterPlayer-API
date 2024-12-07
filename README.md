@@ -14,7 +14,7 @@
 | GET, DELETE | `wplayer.ru/id`, `wplayer.ru/playlist/id`      | Для метода Delete требуется авторизация                             | Получение/Удаление плейлиста            |
 | POST        | `wplayer.ru/upload`                            | Для официального API требуется лицензия игры                        | Публикация плейлиста                    |
 | GET         | `wplayer.ru/search?query=query`                | Аргумент Query необязателен                                         | Поиск плейлистов                        |
-| GET         | `wplayer.ru/infd?author=author&album=album`    | Аргумент Album необязателен, но требуется Author во всех сценариях  | Инфомация о треке                       |
+| GET         | `wplayer.ru/info?author=author&album=album`    | Аргумент Album необязателен, но требуется Author во всех сценариях  | Инфомация о треке                       |
 | GET         | `wplayer.ru/artwork?author=author&album=album` | ^                                                                   | Переадресация на изображения по запросу |
 | GET         | `wplayer.ru/release`                           |                                                                     | Информация о сборке                     |
 | GET         | `wplayer.ru/public_config`                     |                                                                     | Публичный конфиг для мода               |
