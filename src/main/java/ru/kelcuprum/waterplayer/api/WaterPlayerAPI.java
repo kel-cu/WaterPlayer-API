@@ -46,6 +46,7 @@ public class WaterPlayerAPI {
             jsonObject.addProperty("time", System.currentTimeMillis());
             res.send(jsonObject.toString());
         });
+        //
         server.get("/playlist/:id", Playlists::getPlaylist);
         server.delete("/playlist/:id", Playlists::deletePlaylist);
         server.post("/upload", Playlists::uploadPlaylist);
@@ -54,6 +55,16 @@ public class WaterPlayerAPI {
         server.get("/verify", User::verify);
         server.get("/info", Tracks::info);
         server.get("/artwork", Tracks::artwork);
+        //
+        server.get("/v2/playlist/:id", Playlists::getPlaylist);
+        server.delete("/v2/playlist/:id", Playlists::deletePlaylist);
+        server.post("/v2/upload", Playlists::uploadPlaylist);
+        server.get("/v2/search", Playlists::search);
+        server.get("/v2/user", User::getUser);
+        server.get("/v2/verify", User::verify);
+        server.get("/v2/info", Tracks::info);
+        server.get("/v2/artwork", Tracks::artwork);
+        //
         server.get("/:id", Playlists::getPlaylist);
         server.all((req, res) -> {
             res.setStatus(Status._404);
