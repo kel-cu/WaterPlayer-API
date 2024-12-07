@@ -34,6 +34,7 @@ public class WaterPlayerAPI {
         }
         User.loadModerators();
         Tracks.loadCache();
+        Tracks.loadAltNames();
         server = new Express();
         server.use((req, res) -> log(String.format("%s сделал запрос на %s", req.getIp(), req.getPath())));
         server.all("/", (req, res) -> res.json(Objects.INDEX));

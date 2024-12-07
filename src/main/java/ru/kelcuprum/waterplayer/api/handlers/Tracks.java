@@ -1,5 +1,6 @@
 package ru.kelcuprum.waterplayer.api.handlers;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import express.http.request.Request;
@@ -48,8 +49,11 @@ public class Tracks {
         res.redirect(jsonObject.get(req.getQuery("album") == null ? "author" : "track").getAsJsonObject().get("artwork").getAsString());
     }
     protected static HashMap<String, JsonObject> cacheRequests = new LinkedHashMap<>();
+    protected static HashMap<String, String> altNames = new LinkedHashMap<>();
 
     public static JsonObject getInfo(String album, String author) {
+        if(album != null) album = altNames.getOrDefault(album, album);
+        author = altNames.getOrDefault(author, author);
         String cacheID = (album == null ? author : String.format("%s-%s", author, album)).toLowerCase();
         if(cacheRequests.containsKey(cacheID)) {
             WaterPlayerAPI.log(String.format("| Запрос %s был закэширован.", cacheID));
@@ -82,29 +86,32 @@ public class Tracks {
                     .header("Authorization", "OAuth " + WaterPlayerAPI.config.getJsonObject("yandex", new JsonObject()).get("token").getAsString())
                     .header("User-Agent", "Yandex-Music-API")
                     .header("X-Yandex-Music-Client", "YandexMusicAndroid/24023621"));
-            for (JsonElement element : jsonObject.getAsJsonObject("result").getAsJsonObject(album == null ? "artists" : "tracks").getAsJsonArray("results")) {
-                JsonObject resp = new JsonObject();
-                JsonObject json = element.getAsJsonObject();
-                if (json.has("artists")) {
-                    for (JsonElement art : json.getAsJsonArray("artists")) {
-                        if (art.getAsJsonObject().get("name").getAsString().equalsIgnoreCase(author)) {
-                            if (json.get("title").getAsString().equalsIgnoreCase(album)) {
-                                JsonObject track = new JsonObject();
-                                track.addProperty("title", json.get("title").getAsString());
-                                track.addProperty("artwork", json.has("ogImage") ? "https://"+json.get("ogImage").getAsString().replace("/%%", "/400x400") : null);
-                                resp.add("track", track);
-                                JsonObject artist = getInfo(null, author);
-                                resp.add("author", artist.has("author") ? artist.get("author").getAsJsonObject() : null);
-                                return resp;
+            JsonArray results = jsonObject.getAsJsonObject("result").getAsJsonObject(album == null ? "artists" : "tracks").getAsJsonArray("results");
+            if(results != null){
+                for (JsonElement element : results) {
+                    JsonObject resp = new JsonObject();
+                    JsonObject json = element.getAsJsonObject();
+                    if (json.has("artists")) {
+                        for (JsonElement art : json.getAsJsonArray("artists")) {
+                            if (art.getAsJsonObject().get("name").getAsString().equalsIgnoreCase(author)) {
+                                if (json.get("title").getAsString().equalsIgnoreCase(album)) {
+                                    JsonObject track = new JsonObject();
+                                    track.addProperty("title", json.get("title").getAsString());
+                                    track.addProperty("artwork", json.has("ogImage") ? "https://"+json.get("ogImage").getAsString().replace("/%%", "/400x400") : null);
+                                    resp.add("track", track);
+                                    JsonObject artist = getInfo(null, author);
+                                    resp.add("author", artist.has("author") ? artist.get("author").getAsJsonObject() : null);
+                                    return resp;
+                                }
                             }
                         }
+                    } else if (json.get("name").getAsString().equalsIgnoreCase(author)) {
+                        JsonObject artist = new JsonObject();
+                        artist.addProperty("name", json.get("name").getAsString());
+                        artist.addProperty("artwork", json.has("ogImage") ? "https://"+json.get("ogImage").getAsString().replace("/%%", "/400x400") : null);
+                        resp.add("author", artist);
+                        return resp;
                     }
-                } else if (json.get("name").getAsString().equalsIgnoreCase(author)) {
-                    JsonObject artist = new JsonObject();
-                    artist.addProperty("name", json.get("name").getAsString());
-                    artist.addProperty("artwork", json.has("ogImage") ? "https://"+json.get("ogImage").getAsString().replace("/%%", "/400x400") : null);
-                    resp.add("author", artist);
-                    return resp;
                 }
             }
             return null;
@@ -208,10 +215,16 @@ public class Tracks {
         }
     }
 
+    public static void loadAltNames(){
+        JsonObject cache = WaterPlayerAPI.config.getJsonObject("alt_names", new JsonObject());
+        for(String key : cache.keySet()) altNames.put(key.toLowerCase(), cache.get(key).getAsString().toLowerCase());
+        if(!altNames.isEmpty()) WaterPlayerAPI.log(String.format("Альтернативные имена были загружены! Кол-во: %s", altNames.size()));
+    }
+
     public static void loadCache(){
         JsonObject cache = new Config("./cacheInfo.json").toJSON();
         for(String key : cache.keySet()) cacheRequests.put(key, cache.get(key).getAsJsonObject());
-        WaterPlayerAPI.log(String.format("Кэш был загружен! Кол-во: %s", cacheRequests.size()));
+        if(!cacheRequests.isEmpty()) WaterPlayerAPI.log(String.format("Кэш был загружен! Кол-во: %s", cacheRequests.size()));
     }
 
     public static void saveCache(){
