@@ -33,6 +33,7 @@ public class WaterPlayerAPI {
             log(e, Level.DEBUG);
         }
         User.loadModerators();
+        Tracks.loadCache();
         server = new Express();
         server.use((req, res) -> log(String.format("%s сделал запрос на %s", req.getIp(), req.getPath())));
         server.all("/", (req, res) -> res.send(Objects.INDEX.toString()));

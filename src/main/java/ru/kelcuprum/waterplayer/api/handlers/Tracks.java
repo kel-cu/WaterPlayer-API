@@ -7,6 +7,7 @@ import express.http.response.Response;
 import express.utils.Status;
 import ru.kelcuprum.waterplayer.api.WaterPlayerAPI;
 import ru.kelcuprum.waterplayer.api.Web;
+import ru.kelcuprum.waterplayer.api.config.Config;
 import ru.kelcuprum.waterplayer.api.config.GsonHelper;
 import org.apache.commons.codec.binary.Base64;
 
@@ -14,9 +15,12 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpRequest;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
+import static org.slf4j.event.Level.ERROR;
 import static ru.kelcuprum.waterplayer.api.objects.Objects.BAD_REQUEST;
 import static ru.kelcuprum.waterplayer.api.objects.Objects.NOT_FOUND;
 
@@ -62,6 +66,7 @@ public class Tracks {
             } else finalResponse = spotify;
             if(finalResponse != null) {
                 cacheRequests.put(cacheID, finalResponse);
+                saveCache();
                 WaterPlayerAPI.log(String.format("| Запрос %s был добавлен в кэш. Текущее кол-во кэша: %s", cacheID, cacheRequests.size()));
             }
             return finalResponse;
@@ -152,7 +157,6 @@ public class Tracks {
             }
             return null;
         } catch (Exception ex) {
-            ex.printStackTrace();
             WaterPlayerAPI.log(ex);
             return null;
         }
@@ -201,6 +205,22 @@ public class Tracks {
         } catch (Exception ex) {
             WaterPlayerAPI.log(ex);
             return null;
+        }
+    }
+
+    public static void loadCache(){
+        JsonObject cache = new Config("./cacheInfo.json").toJSON();
+        for(String key : cache.keySet()) cacheRequests.put(key, cache.get(key).getAsJsonObject());
+        WaterPlayerAPI.log(String.format("Кэш был загружен! Кол-во: %s", cacheRequests.size()));
+    }
+
+    public static void saveCache(){
+        JsonObject object = new JsonObject();
+        for(String key : cacheRequests.keySet()) object.add(key, cacheRequests.get(key));
+        try {
+            Files.writeString(Path.of("./cacheInfo.json"), object.toString(), StandardCharsets.UTF_8);
+        } catch (Exception ex){
+            WaterPlayerAPI.log(ex, ERROR);
         }
     }
 
