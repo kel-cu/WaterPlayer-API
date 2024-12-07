@@ -26,26 +26,26 @@ public class User {
     public static void getUser(Request req, Response res){
         if(req.getHeader("Authorization").isEmpty()){
             res.setStatus(Status._401);
-            res.send(Objects.UNAUTHORIZED.toString());
+            res.json(Objects.UNAUTHORIZED);
             return;
         }
         JsonObject user = User.getUser(req.getHeader("Authorization").get(0));
         if(user == null){
             res.setStatus(Status._401);
-            res.send(Objects.UNAUTHORIZED.toString());
-        } else res.send(user.toString());
+            res.json(Objects.UNAUTHORIZED);
+        } else res.json(user.toString());
     }
     public static void verify(Request req, Response res){
         if(req.getHeader("Authorization").isEmpty() && WaterPlayerAPI.config.getBoolean("VERIFY", true)){
             res.setStatus(Status._401);
-            res.send(Objects.UNAUTHORIZED.toString());
+            res.json(Objects.UNAUTHORIZED);
             return;
         }
         JsonObject user = User.getUser(req.getHeader("Authorization").get(0));
         if(user == null && WaterPlayerAPI.config.getBoolean("VERIFY", true)){
             res.setStatus(Status._401);
-            res.send(Objects.UNAUTHORIZED.toString());
-        } else res.send("{\"message\": \"ok\", \"ok\": true}");
+            res.json(Objects.UNAUTHORIZED);
+        } else res.json("{\"message\": \"ok\", \"ok\": true}");
     }
     public static JsonObject getUser(String token){
         if(users.containsKey(token)) return users.get(token);
@@ -56,7 +56,7 @@ public class User {
                 user = new JsonObject();
                 user.addProperty("name", object.get("name").getAsString());
                 user.addProperty("moderator", moderators.getOrDefault(object.get("name").getAsString(), false));
-                WaterPlayerAPI.log(user.toString());
+                WaterPlayerAPI.log(String.format("| Пользователь: %s, Модератор: %s", object.get("name").getAsString(), moderators.getOrDefault(object.get("name").getAsString(), false)));
              }
         } catch (Exception ignored){}
         users.put(token, user);

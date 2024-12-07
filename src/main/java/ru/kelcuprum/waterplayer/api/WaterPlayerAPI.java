@@ -36,15 +36,15 @@ public class WaterPlayerAPI {
         Tracks.loadCache();
         server = new Express();
         server.use((req, res) -> log(String.format("%s сделал запрос на %s", req.getIp(), req.getPath())));
-        server.all("/", (req, res) -> res.send(Objects.INDEX.toString()));
-        server.all("/release", (req, res) -> res.send(release.toString()));
+        server.all("/", (req, res) -> res.json(Objects.INDEX));
+        server.all("/release", (req, res) -> res.json(release.toJSON()));
         server.all("/favicon.ico", (req, res) -> res.redirect("https://waterplayer.ru/favicon.ico"));
-        server.all("/public_config", (req, res) -> res.send(publicConfig.toString()));
+        server.all("/public_config", (req, res) -> res.json(publicConfig.toJSON()));
         server.all("/ping", (req, res) -> {
             JsonObject jsonObject = new JsonObject();
             jsonObject.addProperty("message", "Pong!");
             jsonObject.addProperty("time", System.currentTimeMillis());
-            res.send(jsonObject.toString());
+            res.json(jsonObject);
         });
         //
         server.get("/playlist/:id", Playlists::getPlaylist);
@@ -68,9 +68,13 @@ public class WaterPlayerAPI {
         server.get("/:id", Playlists::getPlaylist);
         server.all((req, res) -> {
             res.setStatus(Status._404);
-            res.send(Objects.NOT_FOUND.toString());
+            res.json(Objects.NOT_FOUND);
         });
         server.listen(config.getNumber("port", 4500).intValue());
+        log("-=-=-=-=-=-=-=-=-=-=-=-=-");
+        log("WaterPlayer API запущен!");
+        log(String.format("Порт: %s", config.getNumber("port", 4500).intValue()));
+        log("-=-=-=-=-=-=-=-=-=-=-=-=-");
     }
 
     // Упрощение работы с ответами

@@ -29,22 +29,22 @@ public class Tracks {
     public static void info(Request req, Response res) {
         if(req.getQuery("author") == null){
             res.setStatus(Status._400);
-            res.send(BAD_REQUEST.toString());
+            res.json(BAD_REQUEST);
             return;
         }
         JsonObject jsonObject = getInfo(req.getQuery("album"), req.getQuery("author"));
-        if (jsonObject == null) res.send(NOT_FOUND.toString());
-        else res.send(jsonObject.toString());
+        if (jsonObject == null) res.json(NOT_FOUND);
+        else res.json(jsonObject);
     }
 
     public static void artwork(Request req, Response res) {
         if(req.getQuery("author") == null){
             res.setStatus(Status._400);
-            res.send(BAD_REQUEST.toString());
+            res.json(BAD_REQUEST);
             return;
         }
         JsonObject jsonObject = getInfo(req.getQuery("album"), req.getQuery("author"));
-        if (jsonObject == null) res.send(NOT_FOUND.toString());
+        if (jsonObject == null) res.json(NOT_FOUND);
         res.redirect(jsonObject.get(req.getQuery("album") == null ? "author" : "track").getAsJsonObject().get("artwork").getAsString());
     }
     protected static HashMap<String, JsonObject> cacheRequests = new LinkedHashMap<>();
